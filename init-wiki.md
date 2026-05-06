@@ -20,11 +20,27 @@ Follow these steps in order. Do not skip ahead. Wait for user input at each step
 
 ### Step 1 — Understand the domain
 
-Ask the user two questions (ask both at once):
+Ask the user three questions (ask all at once):
 1. What is this wiki for? (topic, project, purpose — 1–2 sentences)
 2. What kinds of sources will they be adding? (articles, papers, book chapters, notes, transcripts, etc.)
+3. Will you be adding video sources (e.g. YouTube)? (yes / no)
 
 Wait for their answer before proceeding.
+
+If they answer **yes** to question 3, check whether `notebooklm-mcp` is available as an MCP tool in the current session. If it is not available, inform the user:
+
+> Video ingest requires the NotebookLM MCP. Install it before continuing:
+> ```
+> uv tool install notebooklm-mcp-cli
+> nlm setup add claude-code
+> nlm login
+> ```
+> Source: https://github.com/jacob-bd/notebooklm-mcp-cli
+> Restart Claude Code after setup, then run /init-wiki again.
+
+If `notebooklm-mcp` **is** available, or the user answers **no**, proceed to Step 2.
+
+Store the answer to question 3 as `[VIDEO_INGEST]` (yes/no) — it controls whether the Video Ingest workflow is included in the generated CLAUDE.md in Step 4.
 
 ---
 
@@ -38,6 +54,8 @@ wiki/
   index.md             ← content catalog
   log.md               ← append-only activity log
   overview.md          ← high-level synthesis (starts empty)
+  hot.md               ← ~500-token quick reference cache
+  wiki-rules.md        ← snippet to paste into other projects' CLAUDE.md
   sources/             ← one page per ingested source
   concepts/            ← concept/topic pages
   entities/            ← people, orgs, products
@@ -226,6 +244,40 @@ Rules:
 
 ## Workflows
 
+### Video Ingest
+> **Only include this section in CLAUDE.md if `[VIDEO_INGEST] = yes` from Step 1.**
+
+Triggered by: user provides a video URL (YouTube, etc.) and says "ingest".
+
+Steps:
+1. Use `source_add` MCP tool (notebooklm-mcp) to add the URL to a NotebookLM notebook
+2. Use `notebook_query` to request a full verbatim transcript — prompt must explicitly say **不需要標注引用編號，直接輸出完整文字稿** to suppress the `references` array in the response
+3. Save the transcript to `raw/YYYY-MM-DD-[slug].md` with this header:
+
+```
+---
+source_url: "[original video URL]"
+source_type: video
+fetched: YYYY-MM-DD
+---
+
+# [Video Title]
+
+**URL:** [original video URL]
+**Transcript fetched via:** NotebookLM
+
+---
+
+[transcript text]
+```
+
+4. Proceed with the standard Ingest workflow below, using the saved raw file as source
+5. The source page frontmatter must include `source_url` pointing to the original video URL
+
+Hard rule: Always preserve the original video URL — in the raw file header, the source page frontmatter, and the source page body.
+
+---
+
 ### Ingest
 1. Read the source file from `raw/`
 2. Identify: key takeaways, entities, concepts, notable quotes
@@ -248,11 +300,17 @@ Hard rules:
   - Keep hot.md under ~600 tokens; trim redundant rows if it grows too large
 
 ### Query
-1. Read wiki/index.md to find relevant pages
-2. Read relevant pages
-3. Synthesize answer with inline citations ([[page-name]])
-4. Offer to file as synthesis page if non-trivial
-5. Prepend query entry to wiki/log.md
+Steps — access protocol (stop when you have enough):
+1. **Hot cache** — Read `wiki/hot.md` (~500 tokens). Resolves most queries.
+2. **Master index** — Read `wiki/index.md` if hot cache isn't enough.
+3. **Domain pages** — Open 1–2 relevant pages from `wiki/sources/`, `wiki/concepts/`, or `wiki/entities/`.
+4. **Grep fallback** — Search `wiki/**/*.md` by keyword if the page isn't indexed.
+5. **Page limit** — Never read more than 5 wiki pages per query.
+
+Then:
+- Synthesize answer with inline citations ([[page-name]])
+- Offer to file as synthesis page if non-trivial
+- Prepend query entry to wiki/log.md
 
 ### Lint
 1. Read all pages via index.md
