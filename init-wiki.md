@@ -279,7 +279,15 @@ Hard rule: Always preserve the original video URL — in the raw file header, th
 ---
 
 ### Ingest
-1. Read the source file from `raw/`
+**If source is a PDF and `notebooklm-mcp` is available:**
+1. Upload PDF to NotebookLM via `source_add` (source_type=file, wait=true) — upload the whole file, never split
+2. Query via `notebook_query` for full content analysis (text + figures + equations)
+3. Use the returned text as the source material for steps below — do NOT read the PDF directly into context
+
+**If source is not a PDF, or `notebooklm-mcp` is unavailable:**
+1. Read the source file from `raw/` directly
+
+**Then (all sources):**
 2. Identify: key takeaways, entities, concepts, notable quotes
 3. Brief the user (3–5 bullets) — get confirmation before writing
 4. Write source summary page
