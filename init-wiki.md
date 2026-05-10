@@ -249,30 +249,64 @@ Rules:
 
 Triggered by: user provides a video URL (YouTube, etc.) and says "ingest".
 
-Steps:
-1. Use `source_add` MCP tool (notebooklm-mcp) to add the URL to a NotebookLM notebook
-2. Use `notebook_query` to request a full verbatim transcript — prompt must explicitly say **不需要標注引用編號，直接輸出完整文字稿** to suppress the `references` array in the response
-3. Save the transcript to `raw/YYYY-MM-DD-[slug].md` with this header:
+**Transcript source decision (default — no user instruction needed):**
+1. Run `yt-dlp --list-subs "URL"` to check available subtitle tracks
+2. If **manually uploaded CC** exists (non-auto-generated) → use it (Step A)
+3. If only auto-generated or no subtitles → fall back to NotebookLM ASR (Step B)
+
+**Step A — Manual CC path:**
+1. Download the CC file (no video download):
+   ```bash
+   yt-dlp --write-subs --skip-download --sub-langs zh-Hant,zh-Hans,en --sub-format vtt \
+          -o "raw/YYYY-MM-DD-[slug]" "URL"
+   ```
+2. Clean the `.vtt` file into plain text (strip timestamps and formatting tags)
+3. Save to `raw/YYYY-MM-DD-[slug].md` with header:
 
 ```
 ---
 source_url: "[original video URL]"
 source_type: video
+transcript_source: manual-cc
 fetched: YYYY-MM-DD
 ---
 
 # [Video Title]
 
 **URL:** [original video URL]
-**Transcript fetched via:** NotebookLM
+**Transcript fetched via:** YouTube manual CC (yt-dlp)
 
 ---
 
 [transcript text]
 ```
 
-4. Proceed with the standard Ingest workflow below, using the saved raw file as source
-5. The source page frontmatter must include `source_url` pointing to the original video URL
+**Step B — NotebookLM ASR path:**
+1. Use `source_add` MCP tool (notebooklm-mcp) to add the URL to a NotebookLM notebook
+2. Use `notebook_query` to request a full verbatim transcript — prompt must explicitly say **不需要標注引用編號，直接輸出完整文字稿** to suppress the `references` array in the response
+3. Save to `raw/YYYY-MM-DD-[slug].md` with header:
+
+```
+---
+source_url: "[original video URL]"
+source_type: video
+transcript_source: notebooklm-asr
+fetched: YYYY-MM-DD
+---
+
+# [Video Title]
+
+**URL:** [original video URL]
+**Transcript fetched via:** NotebookLM ASR
+
+---
+
+[transcript text]
+```
+
+After either path:
+- Proceed with the standard Ingest workflow below, using the saved raw file as source
+- The source page frontmatter must include `source_url` pointing to the original video URL
 
 Hard rule: Always preserve the original video URL — in the raw file header, the source page frontmatter, and the source page body.
 
