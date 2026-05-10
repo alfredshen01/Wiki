@@ -283,7 +283,7 @@ fetched: YYYY-MM-DD
 
 **Step B — NotebookLM ASR path:**
 1. Use `source_add` MCP tool (notebooklm-mcp) to add the URL to a NotebookLM notebook
-2. Use `notebook_query` to request a full verbatim transcript — prompt must explicitly say **不需要標注引用編號，直接輸出完整文字稿** to suppress the `references` array in the response
+2. Use `notebook_query_start` to request a full verbatim transcript — prompt must explicitly say **不需要標注引用編號，直接輸出完整文字稿** to suppress the `references` array; then auto-poll `notebook_query_status` every 30s until `status: completed` — no user confirmation needed between polls
 3. Save to `raw/YYYY-MM-DD-[slug].md` with header:
 
 ```
@@ -316,7 +316,7 @@ Hard rule: Always preserve the original video URL — in the raw file header, th
 ### Ingest
 **If source is a PDF and `notebooklm-mcp` is available:**
 1. Upload PDF to NotebookLM via `source_add` (source_type=file, wait=true) — upload the whole file, never split
-2. Query via `notebook_query` for full content analysis (text + figures + equations)
+2. Query via `notebook_query_start`; auto-poll `notebook_query_status` every 30s until `status: completed` — no user confirmation needed between polls
 3. Use the returned text as the source material for steps below — do NOT read the PDF directly into context
 
 **If source is not a PDF, or `notebooklm-mcp` is unavailable:**
