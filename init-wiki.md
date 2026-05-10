@@ -307,6 +307,7 @@ fetched: YYYY-MM-DD
 After either path:
 - Proceed with the standard Ingest workflow below, using the saved raw file as source
 - The source page frontmatter must include `source_url` pointing to the original video URL
+- Run /git-commit
 
 Hard rule: Always preserve the original video URL — in the raw file header, the source page frontmatter, and the source page body.
 
@@ -330,6 +331,7 @@ Hard rule: Always preserve the original video URL — in the raw file header, th
 7. Update `wiki/overview.md` if needed
 8. Update `wiki/index.md`
 9. Prepend entry to `wiki/log.md`
+10. Run /git-commit
 
 Hard rules:
 - Never modify any file in `raw/`
